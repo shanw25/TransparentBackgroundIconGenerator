@@ -1,7 +1,7 @@
 import os
 import requests
 from openai import OpenAI
-from PIL import Image
+from PIL import Image, ImageDraw
 import shutil
 import base64
 from io import BytesIO
@@ -78,7 +78,7 @@ def modify_icon(object_name, modification_description):
         print(f"No existing icon found for {object_name}")
         return
     img_str = image_path_to_ByteIO(input_image_path)
-    mask = image_path_to_ByteIO(generate_transparent_image())
+    mask = image_path_to_ByteIO(generate_image_with_transparent_center_square())
 
     original_prompt = f"The icon is generated using the following prompt: Create a simple, flat, pure white {object_name} vector icon with pure black background."
     full_prompt = f"{original_prompt} Your task is to modify the icon as follows: {modification_description}. Try to modify while making less modification and following the original prompt."
@@ -133,15 +133,30 @@ def image_path_to_ByteIO(input_image_path):
     input_image.save(buffered, format="PNG")
     return buffered.getvalue()
 
-def generate_transparent_image():
+def generate_image_with_transparent_center_square():
     # Create a new image with mode 'RGBA' (to include an alpha channel)
     width, height = 1024, 1024
-    transparent_image = Image.new('RGBA', (width, height), (0, 0, 0, 0))  # (0, 0, 0, 0) means fully transparent
+    transparent_square_size = 800
+    image = Image.new('RGBA', (width, height), (255, 255, 255, 255))  # White background with full opacity
+
+    # Calculate the position of the square (centered)
+    upper_left_x = (width - transparent_square_size) // 2
+    upper_left_y = (height - transparent_square_size) // 2
+    bottom_right_x = upper_left_x + transparent_square_size
+    bottom_right_y = upper_left_y + transparent_square_size
+
+    # Create a drawing object
+    draw = ImageDraw.Draw(image)
+
+    # Draw a transparent square in the center
+    for x in range(upper_left_x, bottom_right_x):
+        for y in range(upper_left_y, bottom_right_y):
+            image.putpixel((x, y), (255, 255, 255, 0))  # Fully transparent
 
     # Save the image to a file
-    transparent_image.save("./transparent_image.png", "PNG")
+    image.save("./image_with_transparent_center_square.png", "PNG")
 
-    return "./transparent_image.png"
+    return "./image_with_transparent_center_square.png"
 
 def main():
     print("Do you want to create a new icon or modify an existing icon? (create/modify)")
